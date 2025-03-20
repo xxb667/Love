@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>课堂随机点名系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        :root {
+            --primary-color: #6c5ce7;
+            --secondary-color: #a8a4e6;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-section {
+            margin-bottom: 2rem;
+        }
+
+        .upload-section input[type="file"] {
+            display: none;
+        }
+
+        .upload-section label {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .upload-section label:hover {
+            background: #5a4dcc;
+        }
+
+        .name-display {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 2rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            min-height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .name-display::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, var(--primary-color), transparent);
+            transform: rotate(45deg);
+            animation: borderFlow 3s linear infinite;
+        }
+
+        .pick-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .pick-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .picked-list {
+            margin-top: 2rem;
+            text-align: left;
+        }
+
+        .picked-list h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .picked-list ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .picked-list li {
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        @keyframes borderFlow {
+            0% { transform: rotate(45deg) translateX(-50%); }
+            100% { transform: rotate(45deg) translateX(50%); }
+        }
+
+        .name-enter {
+            animation: zoomIn 0.5s ease;
+        }
+
+        @keyframes zoomIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>课堂随机点名系统</h1>
+        <div class="upload-section">
+            <label for="file-upload">📄 上传名单</label>
+            <input type="file" id="file-upload" accept="." onchange="handleFileUpload(event)">
+        </div>
+        <div class="name-display animate__animated" id="name-display">等待点名...</div>
+        <button class="pick-btn" onclick="pickRandomName()">🎲 随机点名</button>
+        <div class="picked-list">
+            <h3>已点名学生：</h3>
+            <ul id="picked-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        let studentList = [];
+        let pickedNames = [];
+        let interval;
+
+        // 处理文件上传
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const content = e.target.result;
+                    studentList = content.split('\n').map(name => name.trim()).filter(name => name);
+                    alert(`成功上传 ${studentList.length} 名学生名单！`);
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // 随机点名
+        function pickRandomName() {
+            if (studentList.length === 0) {
+                alert("请先上传名单！");
+                return;
+            }
+
+            if (pickedNames.length === studentList.length) {
+                alert("所有学生都已点名完毕！");
+                return;
+            }
+
+            const nameDisplay = document.getElementById('name-display');
+            clearInterval(interval);
+
+            // 开始滚动显示学生名单
+            interval = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * studentList.length);
+                nameDisplay.textContent = studentList[randomIndex];
+            }, 100);
+
+            // 停止滚动并显示最终选定的学生
+            setTimeout(() => {
+                clearInterval(interval);
+                let randomIndex;
+                do {
+                    randomIndex = Math.floor(Math.random() * studentList.length);
+                } while (pickedNames.includes(studentList[randomIndex]));
+
+                const pickedName = studentList[randomIndex];
+                pickedNames.push(pickedName);
+                nameDisplay.textContent = pickedName;
+
+                // 更新已点名列表
+                const pickedList = document.getElementById('picked-list');
+                const listItem = document.createElement('li');
+                listItem.textContent = pickedName;
+                pickedList.appendChild(listItem);
+            }, 3000); // 滚动持续时间（3秒）
+        }
+    </script>
+</body>
+</html>
